@@ -1,0 +1,7 @@
+requests
+geopandas
+matplotlib
+pandas
+shapely
+fiona
+overpy
