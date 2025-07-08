@@ -48,7 +48,7 @@ def merge_geojson_files(files):
     
     return merged
     
-def save_merged_geojson(merged_gdf, output_path='data/merged_countries.geojson'):
+def save_merged_geojson(merged_gdf, output_path='data/output/merged_countries.geojson'):
     """Сохраняет объединённый GeoDataFrame в файл"""
     print(f"Saving merged GeoJSON to {output_path}...")
     merged_gdf.to_file(output_path, driver="GeoJSON")
