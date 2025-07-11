@@ -5,3 +5,7 @@ pandas
 shapely
 fiona
 overpy
+xarray
+netcdf4
+scipy
+numpy
