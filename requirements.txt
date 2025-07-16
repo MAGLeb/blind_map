@@ -9,3 +9,5 @@ xarray
 netcdf4
 scipy
 numpy
+pyvista
+trimesh
