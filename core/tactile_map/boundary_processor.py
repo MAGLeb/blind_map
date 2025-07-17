@@ -11,127 +11,139 @@ import os
 # Add the core directory to the path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import MAP_BOUNDS
-from .constants import BOUNDARY_HEIGHT_MM, BOUNDARY_WIDTH_MM
-from .utils import calculate_grid_resolution, mm_to_pixels
+from .constants import BOUNDARY_HEIGHT_MM, BOUNDARY_WIDTH_MM, PROGRESS_REPORT_INTERVAL
 
 
 def load_country_boundaries(file_path):
-    """Load country boundaries from GeoJSON file"""
+    """
+    Загружает границы стран из GeoJSON файла
+    
+    Возвращает:
+    - gdf: GeoDataFrame с границами стран, обрезанными по границам карты
+    """
     print("Loading country boundaries...")
     
     gdf = gpd.read_file(file_path)
     
-    # Filter boundaries within map bounds
+    # Создаем полигон границ карты
     minx, miny, maxx, maxy = MAP_BOUNDS
     bounds_polygon = Polygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy)])
     
-    # Clip to map bounds
+    # Обрезаем по границам карты
     gdf_clipped = gdf.clip(bounds_polygon)
     
     return gdf_clipped
 
 
+def _get_elevation_at_point(x, y, lon_grid, lat_grid, elevation):
+    """
+    Получает высоту рельефа в точке
+    
+    Возвращает:
+    - elevation: высота в мм
+    """
+    x_distances = np.abs(lon_grid[0, :] - x)
+    y_distances = np.abs(lat_grid[:, 0] - y)
+    
+    x_idx = np.argmin(x_distances)
+    y_idx = np.argmin(y_distances)
+    
+    if 0 <= x_idx < lon_grid.shape[1] and 0 <= y_idx < lat_grid.shape[0]:
+        return elevation[y_idx, x_idx]
+    else:
+        return np.mean(elevation[elevation > 0])
+
+
+def _process_country_polygons(geom):
+    """
+    Извлекает все полигоны из геометрии страны
+    
+    Возвращает:
+    - polygons: список полигонов
+    """
+    polygons = []
+    if geom.geom_type == 'Polygon':
+        polygons.append(geom)
+    elif geom.geom_type == 'MultiPolygon':
+        polygons.extend(geom.geoms)
+    return polygons
+
+
 def create_tactile_boundary_mesh(gdf, lon_grid, lat_grid, elevation):
     """
-    Создает тактильные границы стран с точными размерами в миллиметрах
+    Создает тактильные границы как непрерывные стены из полигонов
     
     Параметры:
-    - Высота границ: BOUNDARY_HEIGHT_MM ПОВЕРХ рельефа
-    - Ширина границ: BOUNDARY_WIDTH_MM (точно в миллиметрах)
-    - Границы возвышаются над рельефом для четкого тактильного различения
+    - gdf: GeoDataFrame стран
+    - lon_grid, lat_grid: координатные сетки
+    - elevation: высоты рельефа
+    
+    Возвращает:
+    - tuple: (boundary_points, boundary_faces) для интеграции в 3D модель
     """
+    print("Creating tactile boundary mesh (CONTINUOUS POLYGON WALLS)...")
+    
     from .utils import degrees_to_mm
-    from scipy.ndimage import binary_dilation
+    from .mesh_generator import create_polygon_wall
     
-    print("Creating tactile boundary mesh...")
+    all_boundary_points = []
+    all_boundary_faces = []
+    point_offset = 0
     
-    # Вычисляем разрешение сетки
-    mm_per_pixel = calculate_grid_resolution(lon_grid, lat_grid)
-    print(f"Grid resolution: {mm_per_pixel:.3f} mm/pixel")
-    
-    # Преобразуем ширину границ из мм в пиксели
-    boundary_width_pixels = mm_to_pixels(BOUNDARY_WIDTH_MM, mm_per_pixel)
-    print(f"Boundary width: {BOUNDARY_WIDTH_MM} mm = {boundary_width_pixels} pixels")
-    
-    # Тактильные параметры для границ
-    boundary_height = BOUNDARY_HEIGHT_MM  # мм (тонкие, но различимые границы ПОВЕРХ рельефа)
-    
-    # Create boundary mask
-    boundary_mask = np.zeros_like(elevation, dtype=bool)
-    
-    # Get grid dimensions and coordinates
-    height, width = elevation.shape
-    
-    print(f"Grid dimensions: {height}x{width}")
-    print(f"Processing {len(gdf)} countries...")
-    
-    # Process each country boundary
-    for idx, row in gdf.iterrows():
+    # Обрабатываем каждую страну
+    for counter, (idx, row) in enumerate(gdf.iterrows(), 1):
         geom = row.geometry
         if geom is None:
             continue
             
-        print(f"Processing boundary {idx+1}/{len(gdf)}")
+        if counter % PROGRESS_REPORT_INTERVAL == 0 or counter == len(gdf):
+            print(f"Processing country {counter}/{len(gdf)}")
         
-        # Extract boundary coordinates
-        boundary_coords = []
-        if geom.geom_type == 'Polygon':
-            boundary_coords.append(list(geom.exterior.coords))
-        elif geom.geom_type == 'MultiPolygon':
-            for poly in geom.geoms:
-                boundary_coords.append(list(poly.exterior.coords))
+        # Получаем все полигоны страны
+        polygons = _process_country_polygons(geom)
         
-        # For each boundary line, convert to grid coordinates
-        for coords in boundary_coords:
-            if len(coords) < 2:
+        # Создаем стену для каждого полигона
+        for poly in polygons:
+            coords = list(poly.exterior.coords)
+            if len(coords) < 4:  # Минимум для замкнутого полигона
                 continue
-                
-            # Convert boundary coordinates to mm and then to grid indices
-            for i in range(len(coords) - 1):
-                lon1, lat1 = coords[i]
-                lon2, lat2 = coords[i + 1]
-                
-                # Convert to mm coordinates
-                x1_mm, y1_mm = degrees_to_mm(lon1, lat1, MAP_BOUNDS)
-                x2_mm, y2_mm = degrees_to_mm(lon2, lat2, MAP_BOUNDS)
-                
-                # Find number of points along segment
-                num_points = max(10, int(np.sqrt((x2_mm-x1_mm)**2 + (y2_mm-y1_mm)**2) / 2))
-                
-                if num_points > 1:
-                    x_points = np.linspace(x1_mm, x2_mm, num_points)
-                    y_points = np.linspace(y1_mm, y2_mm, num_points)
-                    
-                    # Find closest grid points
-                    for x_mm, y_mm in zip(x_points, y_points):
-                        # Find closest grid indices
-                        x_distances = np.abs(lon_grid[0, :] - x_mm)
-                        y_distances = np.abs(lat_grid[:, 0] - y_mm)
-                        
-                        lon_idx = np.argmin(x_distances)
-                        lat_idx = np.argmin(y_distances)
-                        
-                        # Mark boundary
-                        if 0 <= lat_idx < height and 0 <= lon_idx < width:
-                            boundary_mask[lat_idx, lon_idx] = True
+            
+            # Конвертируем в мм и получаем высоты
+            coords_mm = []
+            base_elevations = []
+            
+            for lon, lat in coords:
+                x_mm, y_mm = degrees_to_mm(lon, lat, MAP_BOUNDS)
+                elevation_at_point = _get_elevation_at_point(x_mm, y_mm, lon_grid, lat_grid, elevation)
+                coords_mm.append((x_mm, y_mm))
+                base_elevations.append(elevation_at_point)
+            
+            # Создаем непрерывную стену из полигона
+            wall_points, wall_faces = create_polygon_wall(
+                coords_mm, base_elevations, BOUNDARY_HEIGHT_MM, BOUNDARY_WIDTH_MM
+            )
+            
+            if len(wall_points) > 0:
+                all_boundary_points.append(wall_points)
+                # Сдвигаем индексы граней
+                wall_faces_shifted = wall_faces + point_offset
+                all_boundary_faces.append(wall_faces_shifted)
+                point_offset += len(wall_points)
     
-    # Расширяем границы для создания нужной ширины в миллиметрах
-    if boundary_width_pixels > 1:
-        structure = np.ones((boundary_width_pixels, boundary_width_pixels))
-        boundary_mask = binary_dilation(boundary_mask, structure=structure, iterations=1)
-    
-    # Создаем возвышение границ ПОВЕРХ рельефа
-    # Границы поднимаются на фиксированную высоту над рельефом
-    boundary_elevation = np.zeros_like(elevation)
-    boundary_elevation[boundary_mask] = boundary_height  # Фиксированная высота над рельефом
-    
-    print(f"Boundary parameters: height={boundary_height}mm ABOVE terrain, width={BOUNDARY_WIDTH_MM}mm ({boundary_width_pixels}px)")
-    print(f"Boundary coverage: {np.sum(boundary_mask) / boundary_mask.size * 100:.2f}%")
-    
-    return boundary_elevation
+    # Объединяем все точки и грани
+    if all_boundary_points:
+        combined_points = np.vstack(all_boundary_points)
+        combined_faces = np.vstack(all_boundary_faces)
+        print(f"Created {len(combined_points)} boundary points and {len(combined_faces)} boundary faces")
+        return combined_points, combined_faces
+    else:
+        print("No boundary points created")
+        return np.array([]), np.array([])
 
 
 def create_boundary_mesh(gdf, lon_grid, lat_grid, elevation, boundary_width=0.01, boundary_height=2.0):
-    """Create 3D mesh for country boundaries - DEPRECATED, use create_tactile_boundary_mesh instead"""
-    print("Warning: Using deprecated create_boundary_mesh function")
+    """
+    УСТАРЕВШАЯ ФУНКЦИЯ - используйте create_tactile_boundary_mesh
+    """
+    print("Warning: create_boundary_mesh is deprecated. Use create_tactile_boundary_mesh instead.")
     return create_tactile_boundary_mesh(gdf, lon_grid, lat_grid, elevation)

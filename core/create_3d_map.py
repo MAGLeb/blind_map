@@ -21,6 +21,7 @@ from tactile_map import (
     load_country_boundaries,
     create_tactile_boundary_mesh,
     create_3d_mesh,
+    create_3d_mesh_with_boundaries,
     export_to_stl,
     visualize_mesh,
     print_map_info,
@@ -110,25 +111,20 @@ def main():
         gdf = load_country_boundaries(str(boundaries_file))
         print(f"Number of boundary features: {len(gdf)}")
         
-        # 8. Create tactile boundary elevation
-        print("Step 7: Creating tactile boundary elevation...")
-        boundary_elevation = create_tactile_boundary_mesh(gdf, lon_grid, lat_grid, elevation_processed)
+        # 7. Create vector boundary lines
+        print("Step 7: Creating vector boundary lines...")
+        boundary_data = create_tactile_boundary_mesh(gdf, lon_grid, lat_grid, elevation_processed)
         
-        # 9. Combine all elevations
-        print("Step 8: Combining all elevations...")
-        final_elevation = elevation_processed + boundary_elevation
-        print(f"Final elevation range: {final_elevation.min():.2f} to {final_elevation.max():.2f} mm")
+        # 8. Create 3D mesh with vector boundaries
+        print("Step 8: Creating 3D mesh with boundaries...")
+        mesh = create_3d_mesh_with_boundaries(lon_grid, lat_grid, elevation_processed, boundary_data)
         
-        # 10. Create 3D mesh with flat bottom
-        print("Step 9: Creating 3D mesh with flat bottom...")
-        mesh = create_3d_mesh(lon_grid, lat_grid, final_elevation)
-        
-        # 11. Export to STL
-        print("Step 10: Exporting to STL...")
+        # 9. Export to STL
+        print("Step 9: Exporting to STL...")
         export_to_stl(mesh, str(output_file))
         
-        # 12. Visualize
-        print("Step 11: Visualizing...")
+        # 10. Visualize
+        print("Step 10: Visualizing...")
         visualize_mesh(mesh, "3D Tactile Map - Optimized for Blind Users")
         
         # Final summary
