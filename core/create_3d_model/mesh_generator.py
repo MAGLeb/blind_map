@@ -376,3 +376,190 @@ def create_polygon_wall(coords_mm, base_elevations, height, width):
     faces = _create_wall_faces(n_points)
     
     return all_points, faces
+
+
+def create_3d_mesh_with_boundaries_and_waves(lon_grid, lat_grid, elevation, boundary_data, wave_lines):
+    """
+    Создает 3D модель с рельефом, границами и волновыми линиями
+    
+    Параметры:
+    - lon_grid, lat_grid: координатные сетки
+    - elevation: высоты рельефа
+    - boundary_data: данные границ (точки и грани)
+    - wave_lines: список волновых линий
+    
+    Возвращает:
+    - объединенная 3D модель с рельефом, границами и волнами
+    """
+    print("Creating 3D mesh with boundaries and wave lines...")
+    
+    # Создаем базовый меш рельефа
+    terrain_mesh_data = create_flat_bottom_mesh(lon_grid, lat_grid, elevation)
+    
+    # Создаем геометрию волновых линий
+    wave_mesh_data = create_wave_lines_mesh(wave_lines)
+    
+    # Проверяем формат данных границ
+    if isinstance(boundary_data, tuple) and len(boundary_data) == 2:
+        boundary_points, boundary_faces = boundary_data
+    else:
+        print("Warning: Unknown boundary data format, skipping boundaries")
+        boundary_points, boundary_faces = np.array([]), np.array([])
+    
+    if USE_PYVISTA:
+        import pyvista as pv
+        
+        # Создаем меш рельефа
+        terrain_vertices = terrain_mesh_data['vertices']
+        terrain_faces = terrain_mesh_data['faces']
+        
+        # Конвертируем грани в формат PyVista
+        pv_terrain_faces = []
+        for face in terrain_faces:
+            pv_terrain_faces.extend([3] + face.tolist())
+        
+        terrain_mesh = pv.PolyData(terrain_vertices, pv_terrain_faces)
+        combined_mesh = terrain_mesh
+        
+        # Добавляем границы, если есть
+        if len(boundary_points) > 0:
+            pv_boundary_faces = []
+            for face in boundary_faces:
+                pv_boundary_faces.extend([3] + face.tolist())
+            
+            boundary_mesh = pv.PolyData(boundary_points, pv_boundary_faces)
+            combined_mesh = combined_mesh + boundary_mesh
+            print(f"Added boundaries: {len(boundary_points)} points, {len(boundary_faces)} faces")
+        
+        # Добавляем волновые линии, если есть
+        if wave_mesh_data and len(wave_mesh_data['vertices']) > 0:
+            wave_vertices = wave_mesh_data['vertices']
+            wave_faces = wave_mesh_data['faces']
+            
+            pv_wave_faces = []
+            for face in wave_faces:
+                pv_wave_faces.extend([3] + face.tolist())
+            
+            wave_mesh = pv.PolyData(wave_vertices, pv_wave_faces)
+            combined_mesh = combined_mesh + wave_mesh
+            print(f"Added wave lines: {len(wave_vertices)} points, {len(wave_faces)} faces")
+        
+        print(f"Final combined mesh: {combined_mesh.n_points} points, {combined_mesh.n_faces} faces")
+        return combined_mesh
+    
+    else:
+        # Fallback для trimesh
+        print("Using trimesh fallback (wave lines not fully supported)")
+        return create_3d_mesh_with_boundaries(lon_grid, lat_grid, elevation, boundary_data)
+
+
+def create_wave_lines_mesh(wave_lines):
+    """
+    Создает mesh для волновых линий
+    
+    Параметры:
+    - wave_lines: список волновых линий с параметрами
+    
+    Возвращает:
+    - словарь с vertices и faces для волновых линий
+    """
+    if not wave_lines:
+        return {'vertices': np.array([]), 'faces': np.array([])}
+    
+    print(f"Creating mesh for {len(wave_lines)} wave lines...")
+    
+    all_vertices = []
+    all_faces = []
+    vertex_offset = 0
+    
+    for wave_line in wave_lines:
+        points = wave_line['points']
+        height = wave_line['height']
+        width = wave_line.get('width', 2.5)  # мм (используем новое значение по умолчанию)
+        
+        if len(points) < 2:
+            continue
+        
+        # Создаем прямоугольные сегменты для каждой линии
+        line_vertices = []
+        line_faces = []
+        
+        # Конвертируем ширину из мм в координаты
+        # Приблизительный масштаб: карта 400мм на ~70 градусов долготы
+        map_width_mm = 400.0
+        map_width_deg = 70.0  # приблизительно
+        mm_to_deg = map_width_deg / map_width_mm
+        width_coord = width * mm_to_deg
+        
+        print(f"Creating wave line: width={width}mm -> {width_coord:.6f} degrees")
+        
+        for i in range(len(points) - 1):
+            p1 = points[i]
+            p2 = points[i + 1]
+            
+            # Направление линии
+            dx = p2[0] - p1[0]
+            dy = p2[1] - p1[1]
+            length = np.sqrt(dx*dx + dy*dy)
+            
+            if length > 0:
+                # Нормализованный вектор направления
+                dx /= length
+                dy /= length
+                
+                # Перпендикулярный вектор для ширины
+                px = -dy * width_coord / 2
+                py = dx * width_coord / 2
+                
+                # Четыре угла прямоугольника на уровне terrain + height
+                v1 = [p1[0] + px, p1[1] + py, height]
+                v2 = [p1[0] - px, p1[1] - py, height]
+                v3 = [p2[0] - px, p2[1] - py, height]
+                v4 = [p2[0] + px, p2[1] + py, height]
+                
+                # Четыре угла на уровне terrain (основание)
+                v5 = [p1[0] + px, p1[1] + py, 0]
+                v6 = [p1[0] - px, p1[1] - py, 0]
+                v7 = [p2[0] - px, p2[1] - py, 0]
+                v8 = [p2[0] + px, p2[1] + py, 0]
+                
+                # Добавляем вершины
+                start_idx = len(line_vertices)
+                line_vertices.extend([v1, v2, v3, v4, v5, v6, v7, v8])
+                
+                # Добавляем грани (по 2 треугольника на каждую сторону)
+                # Верхняя грань
+                line_faces.extend([
+                    [start_idx, start_idx+1, start_idx+2],
+                    [start_idx, start_idx+2, start_idx+3]
+                ])
+                # Нижняя грань
+                line_faces.extend([
+                    [start_idx+4, start_idx+6, start_idx+5],
+                    [start_idx+4, start_idx+7, start_idx+6]
+                ])
+                # Боковые грани
+                line_faces.extend([
+                    [start_idx, start_idx+4, start_idx+5],
+                    [start_idx, start_idx+5, start_idx+1],
+                    [start_idx+1, start_idx+5, start_idx+6],
+                    [start_idx+1, start_idx+6, start_idx+2],
+                    [start_idx+2, start_idx+6, start_idx+7],
+                    [start_idx+2, start_idx+7, start_idx+3],
+                    [start_idx+3, start_idx+7, start_idx+4],
+                    [start_idx+3, start_idx+4, start_idx]
+                ])
+        
+        # Добавляем к общему списку с корректировкой индексов
+        if line_vertices:
+            all_vertices.extend(line_vertices)
+            for face in line_faces:
+                all_faces.append([face[0] + vertex_offset, face[1] + vertex_offset, face[2] + vertex_offset])
+            vertex_offset += len(line_vertices)
+    
+    print(f"Created wave mesh: {len(all_vertices)} vertices, {len(all_faces)} faces")
+    
+    return {
+        'vertices': np.array(all_vertices) if all_vertices else np.array([]),
+        'faces': np.array(all_faces) if all_faces else np.array([])
+    }

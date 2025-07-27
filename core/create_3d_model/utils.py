@@ -11,7 +11,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import MAP_BOUNDS
 
-from ..constants import FULL_WIDTH_MM, FULL_HEIGHT_MM, CARD_WIDTH_MM, CARD_HEIGHT_MM, GRID_COLS, GRID_ROWS, BASE_THICKNESS_MM, MAX_ELEVATION_MM, MIN_TACTILE_DIFFERENCE_MM, BOUNDARY_HEIGHT_MM, WAVE_HEIGHT_MM, WAVE_SPACING_MM
+from ..constants import FULL_WIDTH_MM, FULL_HEIGHT_MM, CARD_WIDTH_MM, CARD_HEIGHT_MM, GRID_COLS, GRID_ROWS, BASE_THICKNESS_MM, MAX_ELEVATION_MM, MIN_TACTILE_DIFFERENCE_MM, BOUNDARY_HEIGHT_MM, WAVE_HEIGHT_MM, WAVE_INTERVAL_MM
 
 
 def degrees_to_mm(lon_deg, lat_deg, bounds):
@@ -81,7 +81,7 @@ def print_tactile_recommendations():
     print(f"• Максимальная высота рельефа: {MAX_ELEVATION_MM} мм")
     print(f"• Высота границ стран: {BOUNDARY_HEIGHT_MM} мм")
     print(f"• Высота волн: {WAVE_HEIGHT_MM} мм")
-    print(f"• Расстояние между волнами: {WAVE_SPACING_MM} мм")
+    print(f"• Интервал между волнами: {WAVE_INTERVAL_MM} мм")
     print(f"• Толщина основания: {BASE_THICKNESS_MM} мм")
     print("\nОптимальные параметры для осязания:")
     print("• Количество различимых уровней высот: 6-8")

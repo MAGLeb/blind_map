@@ -17,9 +17,9 @@ sys.path.insert(0, parent_dir)
 
 # Import the decomposed modules directly from their specific files
 from core.create_3d_model.elevation_processor import load_elevation_data, smooth_elevation_for_tactile
-from core.create_3d_model.water_processor import create_tactile_wave_pattern
+from core.create_3d_model.water_processor import create_tactile_wave_pattern, create_tactile_wave_lines
 from core.create_3d_model.boundary_processor import load_country_boundaries, create_tactile_boundary_mesh
-from core.create_3d_model.mesh_generator import create_3d_mesh, create_3d_mesh_with_boundaries
+from core.create_3d_model.mesh_generator import create_3d_mesh, create_3d_mesh_with_boundaries, create_3d_mesh_with_boundaries_and_waves
 from core.create_3d_model.stl_exporter import export_to_stl
 from core.create_3d_model.visualization import visualize_mesh
 from core.create_3d_model.utils import print_map_info, print_tactile_recommendations, calculate_real_scale
@@ -96,8 +96,11 @@ def main():
         # 5. Set water areas to 0 elevation
         elevation_processed = elevation_scaled.copy()
         
-        # 6. Add tactile wave pattern to water areas
-        print("Step 5: Adding tactile wave pattern...")
+        # 6. Create tactile wave lines for water areas (as separate geometry)
+        print("Step 5: Creating tactile wave lines...")
+        wave_lines = create_tactile_wave_lines(water_mask, lon_grid, lat_grid)
+        
+        # Create empty wave pattern for backward compatibility
         wave_pattern = create_tactile_wave_pattern(water_mask, lon_grid, lat_grid)
         elevation_processed += wave_pattern
         
@@ -110,9 +113,9 @@ def main():
         print("Step 7: Creating vector boundary lines...")
         boundary_data = create_tactile_boundary_mesh(gdf, lon_grid, lat_grid, elevation_processed)
         
-        # 8. Create 3D mesh with vector boundaries
-        print("Step 8: Creating 3D mesh with boundaries...")
-        mesh = create_3d_mesh_with_boundaries(lon_grid, lat_grid, elevation_processed, boundary_data)
+        # 8. Create 3D mesh with vector boundaries and wave lines
+        print("Step 8: Creating 3D mesh with boundaries and wave lines...")
+        mesh = create_3d_mesh_with_boundaries_and_waves(lon_grid, lat_grid, elevation_processed, boundary_data, wave_lines)
         
         # 9. Export to STL
         print("Step 9: Exporting to STL...")
@@ -154,11 +157,13 @@ def main():
         print(f"• Country boundaries: {BOUNDARY_HEIGHT_MM}mm ABOVE terrain (clearly detectable)")
         print(f"• Maximum terrain height: {MAX_ELEVATION_MM}mm")
         print(f"• Maximum boundary height: {MAX_ELEVATION_MM + BOUNDARY_HEIGHT_MM}mm")
-        print(f"• Wave texture: 0.4mm height, 5.0mm spacing")
+        print(f"• Wave pattern: Short sinusoidal segments, 1.2mm height, 15mm interval, 2.5mm width")
+        print(f"• Wave segments: 10mm length each, small amplitude (subtle curve)")
         print(f"• Base thickness: {BASE_THICKNESS_MM}mm (stable for handling)")
         print(f"• Total model height: {MAX_ELEVATION_MM + BOUNDARY_HEIGHT_MM + BASE_THICKNESS_MM}mm")
         print("• Flat bottom for stable 3D printing")
         print("• Country boundaries raised above terrain for clear tactile distinction")
+        print("• Water areas: Sinusoidal wave lines for clear tactile identification")
         print("• Optimized for finger-tip tactile exploration")
         
     except Exception as e:
