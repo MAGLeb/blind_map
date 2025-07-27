@@ -14,6 +14,55 @@ sys.path.insert(0, parent_dir)
 from core.constants import WAVE_HEIGHT_MM, WAVE_INTERVAL_MM, WAVE_WIDTH_MM, WAVE_SEGMENT_LENGTH_MM
 
 
+def check_water_area_with_width(lon, lat, wave_width_mm, water_mask, lon_grid, lat_grid):
+    """
+    Проверяет, что вся область волны (с учётом её ширины) находится в воде
+    
+    Args:
+        lon, lat: центральная точка волны
+        wave_width_mm: ширина волны в мм
+        water_mask: маска водных областей
+        lon_grid, lat_grid: сетки координат
+    
+    Returns:
+        bool: True если вся область волны находится в воде
+    """
+    # Конвертируем ширину из мм в градусы
+    map_width_mm = 400.0
+    map_width_deg = lon_grid.max() - lon_grid.min()
+    mm_to_deg = map_width_deg / map_width_mm
+    width_deg = wave_width_mm * mm_to_deg
+    
+    # Проверяем несколько точек вокруг центральной точки
+    check_points = [
+        (lon, lat),  # центр
+        (lon - width_deg/2, lat),  # левый край
+        (lon + width_deg/2, lat),  # правый край
+        (lon, lat - width_deg/2),  # нижний край
+        (lon, lat + width_deg/2),  # верхний край
+        (lon - width_deg/3, lat - width_deg/3),  # диагонали
+        (lon + width_deg/3, lat + width_deg/3),
+        (lon - width_deg/3, lat + width_deg/3),
+        (lon + width_deg/3, lat - width_deg/3),
+    ]
+    
+    for check_lon, check_lat in check_points:
+        # Находим индексы в сетке
+        lat_idx = np.searchsorted(lat_grid[:, 0], check_lat)
+        lon_idx = np.searchsorted(lon_grid[0, :], check_lon)
+        
+        # Проверяем границы
+        if (lat_idx < 0 or lat_idx >= water_mask.shape[0] or 
+            lon_idx < 0 or lon_idx >= water_mask.shape[1]):
+            return False
+            
+        # Проверяем, что точка в воде
+        if not water_mask[lat_idx, lon_idx]:
+            return False
+    
+    return True
+
+
 def create_tactile_wave_lines(water_mask, lon_grid, lat_grid):
     """
     Создает множество мелких синусоидальных волн в водных областях
@@ -60,13 +109,14 @@ def create_tactile_wave_lines(water_mask, lon_grid, lat_grid):
     # Создаем ряды волн
     current_lat = lat_min + wave_interval_deg
     total_segments = 0
+    rejected_segments = 0
     
     while current_lat < lat_max - wave_interval_deg:
         # Создаем сегменты волн в текущем ряду
         current_lon = lon_min
         
         while current_lon < lon_max - segment_length_deg:
-            # Проверяем, есть ли вода в области этого сегмента
+            # Проверяем, есть ли вода в области этого сегмента (с учётом ширины волны)
             segment_has_water = False
             
             # Проверяем несколько точек в области сегмента
@@ -75,16 +125,10 @@ def create_tactile_wave_lines(water_mask, lon_grid, lat_grid):
                 test_lon = current_lon + (i / (test_points - 1)) * segment_length_deg
                 test_lat = current_lat
                 
-                # Находим индексы в сетке
-                lat_idx = np.searchsorted(lat_grid[:, 0], test_lat)
-                lon_idx = np.searchsorted(lon_grid[0, :], test_lon)
-                
-                # Проверяем границы и воду
-                if (0 <= lat_idx < water_mask.shape[0] and 
-                    0 <= lon_idx < water_mask.shape[1]):
-                    if water_mask[lat_idx, lon_idx]:
-                        segment_has_water = True
-                        break
+                # Проверяем, что вся область волны будет в воде
+                if check_water_area_with_width(test_lon, test_lat, wave_width_mm, water_mask, lon_grid, lat_grid):
+                    segment_has_water = True
+                    break
             
             # Создаем сегмент только если в области есть вода
             if segment_has_water:
@@ -103,13 +147,8 @@ def create_tactile_wave_lines(water_mask, lon_grid, lat_grid):
                 # Создаем точки сегмента, проверяя каждую на принадлежность воде
                 line_points = []
                 for lon, lat in zip(lon_points, lat_points):
-                    # Точная проверка воды для каждой точки
-                    lat_idx = np.searchsorted(lat_grid[:, 0], lat)
-                    lon_idx = np.searchsorted(lon_grid[0, :], lon)
-                    
-                    if (0 <= lat_idx < water_mask.shape[0] and 
-                        0 <= lon_idx < water_mask.shape[1] and 
-                        water_mask[lat_idx, lon_idx]):
+                    # Проверяем, что вся область волны (с учётом ширины) находится в воде
+                    if check_water_area_with_width(lon, lat, wave_width_mm, water_mask, lon_grid, lat_grid):
                         line_points.append([lon, lat, wave_height])
                 
                 # Добавляем сегмент если в нем достаточно точек
@@ -120,6 +159,11 @@ def create_tactile_wave_lines(water_mask, lon_grid, lat_grid):
                         'width': wave_width_mm
                     })
                     total_segments += 1
+                else:
+                    rejected_segments += 1
+            else:
+                # Сегмент полностью отклонен из-за близости к суше
+                rejected_segments += 1
             
             # Переходим к следующему сегменту с небольшим промежутком
             current_lon += segment_length_deg * 1.5  # 50% перекрытие между возможными позициями
@@ -127,8 +171,9 @@ def create_tactile_wave_lines(water_mask, lon_grid, lat_grid):
         current_lat += wave_interval_deg
     
     print(f"Created {total_segments} small wave segments")
+    print(f"Rejected {rejected_segments} segments (too close to land)")
     print(f"Wave parameters: height={wave_height}mm, width={wave_width_mm}mm, segment_length={segment_length_mm}mm")
-    print(f"Waves are strictly limited to water areas only")
+    print(f"Waves are strictly limited to water areas only (including wave width margin)")
     
     return wave_lines
 
