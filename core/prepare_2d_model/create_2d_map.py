@@ -19,7 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from core.config import (MAP_BOUNDS, FIGURE_SIZE, DPI, 
                               COUNTRY_COLOR, COUNTRY_EDGE_COLOR, COUNTRY_EDGE_WIDTH,
                               SEA_COLOR, SEA_EDGE_COLOR, SEA_EDGE_WIDTH)
-from core.water_processor import (load_or_create_water_areas, create_water_from_countries)
+from core.prepare_2d_model.water_processor import (load_or_create_water_areas, create_water_from_countries)
 
 def create_final_map(input_file='data/output/merged_countries.geojson', 
                     output_file='data/previews/tactile_map.png',

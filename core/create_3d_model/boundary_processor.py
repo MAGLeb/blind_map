@@ -11,7 +11,7 @@ import os
 # Add the core directory to the path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import MAP_BOUNDS
-from .constants import BOUNDARY_HEIGHT_MM, BOUNDARY_WIDTH_MM, PROGRESS_REPORT_INTERVAL
+from ..constants import BOUNDARY_HEIGHT_MM, BOUNDARY_WIDTH_MM, PROGRESS_REPORT_INTERVAL
 
 
 def load_country_boundaries(file_path):

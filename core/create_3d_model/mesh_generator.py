@@ -3,7 +3,7 @@
 """
 
 import numpy as np
-from .constants import USE_PYVISTA, BOUNDARY_HEIGHT_MM, BOUNDARY_WIDTH_MM
+from ..constants import USE_PYVISTA, BOUNDARY_HEIGHT_MM, BOUNDARY_WIDTH_MM
 
 
 def create_flat_bottom_mesh(lon_grid, lat_grid, elevation, base_thickness=2.0):

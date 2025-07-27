@@ -4,7 +4,7 @@ Visualization functionality for tactile maps
 
 import numpy as np
 import matplotlib.pyplot as plt
-from .constants import USE_PYVISTA
+from ..constants import USE_PYVISTA
 
 
 def visualize_mesh(mesh, title="3D Tactile Map"):

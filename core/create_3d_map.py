@@ -10,26 +10,21 @@ from pathlib import Path
 import sys
 import os
 
-# Add the current directory to Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add the parent directory to Python path so we can import from core
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
 
-# Import the decomposed modules
-from tactile_map import (
-    load_elevation_data,
-    smooth_elevation_for_tactile,
-    create_tactile_wave_pattern,
-    load_country_boundaries,
-    create_tactile_boundary_mesh,
-    create_3d_mesh,
-    create_3d_mesh_with_boundaries,
-    export_to_stl,
-    visualize_mesh,
-    print_map_info,
-    print_tactile_recommendations,
-    calculate_real_scale
-)
+# Import the decomposed modules directly from their specific files
+from core.create_3d_model.elevation_processor import load_elevation_data, smooth_elevation_for_tactile
+from core.create_3d_model.water_processor import create_tactile_wave_pattern
+from core.create_3d_model.boundary_processor import load_country_boundaries, create_tactile_boundary_mesh
+from core.create_3d_model.mesh_generator import create_3d_mesh, create_3d_mesh_with_boundaries
+from core.create_3d_model.stl_exporter import export_to_stl
+from core.create_3d_model.visualization import visualize_mesh
+from core.create_3d_model.utils import print_map_info, print_tactile_recommendations, calculate_real_scale
 
-from tactile_map.constants import (
+from core.constants import (
     MAX_ELEVATION_MM,
     BASE_THICKNESS_MM,
     FULL_WIDTH_MM,
@@ -41,7 +36,7 @@ from tactile_map.constants import (
     BOUNDARY_HEIGHT_MM
 )
 
-from config import MAP_BOUNDS
+from core.config import MAP_BOUNDS
 
 
 def main():
@@ -54,7 +49,7 @@ def main():
     
     # File paths
     base_path = Path(__file__).parent.parent
-    elevation_file = base_path / "data" / "ETOPO1_Bed_g_gmt4.grd"
+    elevation_file = base_path / "data" / "input" / "ETOPO1_Bed_g_gmt4.grd"
     boundaries_file = base_path / "data" / "output" / "merged_countries.geojson"
     output_file = base_path / "data" / "output" / "terrain_model.stl"
     

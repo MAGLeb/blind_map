@@ -11,7 +11,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import MAP_BOUNDS
 
-from .constants import MAX_ELEVATION_MM, MIN_TACTILE_DIFFERENCE_MM
+from ..constants import MAX_ELEVATION_MM, MIN_TACTILE_DIFFERENCE_MM
 from .utils import degrees_to_mm
 
 

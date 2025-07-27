@@ -3,7 +3,7 @@ STL export functionality for tactile maps
 """
 
 import numpy as np
-from .constants import USE_PYVISTA
+from ..constants import USE_PYVISTA
 
 
 def export_to_stl(mesh, output_path):
