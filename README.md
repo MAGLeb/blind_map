@@ -2,105 +2,102 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![3D Printing](https://img.shields.io/badge/3D%20Printing-PLA-orange.svg)
-![Region](https://img.shields.io/badge/Region-Europe%20%7C%20Middle%20East-green.svg)
 
-3D-printable map for learning geography by touch.
+A 3D-printable tactile map that helps blind people learn geography by touch.
 
 ![Preview](preview.png)
 
+## What is this?
+
+This project generates STL files for 3D printing a tactile map. The map is designed so a blind person can:
+
+- **Feel country borders** — raised walls (5mm) separate countries
+- **Recognize terrain** — mountains are higher, plains are lower
+- **Find capitals** — small bumps mark capital cities
+- **Identify countries** — each country has a tactile number (1-24)
+- **Distinguish water from land** — sea has a wave texture
+
+The map splits into 4 puzzle pieces (200×160mm each) that snap together, plus a legend card with country names in Braille.
+
 ## Features
 
-- **Tactile terrain** — mountains and plains you can feel
-- **Raised borders** — walls between countries for easy identification
-- **Wave pattern** — distinguishes sea from land
-- **Capital markers** — hemisphere bumps mark capital cities
-- **7-segment numbers** — each country numbered for reference
-- **Braille legend** — separate card with country names
-- **Puzzle connectors** — 4 cards snap together
+| What | How it feels |
+|------|--------------|
+| Country borders | Raised walls between countries |
+| Mountains/plains | Higher = mountains, lower = plains |
+| Sea | Wavy texture |
+| Capitals | Small bumps |
+| Country numbers | Raised 7-segment digits (like a calculator) |
+| Legend | Braille text + texture samples |
 
-## Specification
+![Legend](legend.png)
 
-### Dimensions
+## Region Covered
 
-| Parameter | Value |
-|-----------|-------|
-| Map size | 400×320 mm |
-| Cards | 4 pcs (2×2) + legend |
-| Card size | 200×160 mm |
-| Base thickness | 6 mm |
+Europe, Middle East, North Africa, Caucasus — 24 countries total.
 
-### Region
+Coordinates: 5°—70° E, 12°—55° N
 
-- Bounds: 5°—70° E, 12°—55° N
-- Includes: Balkans, Caucasus, Middle East, North Africa
-- 24 numbered countries
+## How to Use
 
-### Tactile Elements
-
-| Element | Height | Size | Note |
-|---------|--------|------|------|
-| **Country borders** | 5 mm | width 2.5 mm | Walls between countries |
-| **Terrain** | 0—10 mm | — | Mountains, plains |
-| **Water (sea)** | 2 mm | waves every 4 mm | Sinusoidal waves |
-| **Capitals** | 2 mm | ⌀3 mm | Hemisphere (bump) |
-| **Country numbers** | 1.5 mm | 7-segment | Near capital |
-
-### Puzzle Connectors
-
-| Parameter | Value |
-|-----------|-------|
-| Tab (protrusion) | 8×4×3 mm |
-| Slot (hole) | +0.5 mm clearance |
-| Position | Bottom part of base |
-
-### Legend (separate card)
-
-- Numbers 1-24 with country names (Braille)
-- Texture samples: waves (sea), wall (border), bump (capital)
-
-## Data Preparation
-
-Data files are not included (too large). To download:
+### 1. Get the data
 
 ```bash
-# 1. Download country borders from geoBoundaries
+# Download country borders (automatic)
 python core/prepare_data/download_geojson.py
-
-# 2. Merge into single file
 python core/prepare_data/merge_geojson.py
 
-# 3. Download ETOPO1 elevation manually:
-#    https://www.ngdc.noaa.gov/mgg/global/
-#    Place as: data/input/ETOPO1_Bed_g_gmt4.grd
+# Download elevation data (manual)
+# Go to: https://www.ngdc.noaa.gov/mgg/global/
+# Download ETOPO1_Bed_g_gmt4.grd
+# Place in: data/input/
 ```
 
-| Data | Purpose | Source |
-|------|---------|--------|
-| **Country borders** | Raised walls between countries | [geoBoundaries](https://www.geoboundaries.org/) |
-| **Elevation (ETOPO1)** | Terrain relief — mountains feel higher, plains lower | [NOAA](https://www.ngdc.noaa.gov/mgg/global/) |
+| Data | What for | Source |
+|------|----------|--------|
+| Country borders | Walls between countries | [geoBoundaries](https://www.geoboundaries.org/) |
+| Elevation | Terrain (mountains, plains) | [NOAA ETOPO1](https://www.ngdc.noaa.gov/mgg/global/) |
+
+### 2. Generate STL files
+
+```bash
+python core/generate.py
+```
+
+Output: `data/output/*.stl` — 4 map cards + 1 legend card
+
+### 3. Print
+
+Send STL files to a 3D printer:
+
+| Setting | Value | Note |
+|---------|-------|------|
+| Material | PLA | Common, cheap, safe |
+| Infill | 15-20% | How solid inside (lower = faster) |
+| Layer height | 0.2mm | Print quality |
 
 ## Project Structure
 
 ```
 blind_map/
 ├── core/
-│   ├── config.py          # Map region
-│   ├── constants.py       # Parameters
-│   ├── generate.py        # STL generator
-│   └── prepare_data/      # Data download scripts
-│       ├── download_geojson.py
-│       └── merge_geojson.py
-├── data/                  # Not in repo
-│   ├── input/             # ETOPO1 elevation
-│   ├── output/            # STL files
-│   └── countries/         # GeoJSON files
+│   ├── config.py              # Map region settings
+│   ├── constants.py           # Size/height parameters
+│   ├── generate.py            # Main STL generator
+│   └── prepare_data/          # Data download scripts
+├── data/                      # Not in repo (too large)
+│   ├── input/                 # Source data
+│   ├── output/                # Generated STL files
+│   └── countries/             # Country borders
 └── README.md
 ```
 
-## 3D Printing
+## Technical Details
 
-| Parameter | Value | Why |
-|-----------|-------|-----|
-| **Material** | PLA | Easy to print, safe, cheap |
-| **Infill** | 15-20% | Inside fill density. Low = lighter, faster, cheaper |
-| **Layer height** | 0.2 mm | Standard quality. Thinner = smoother but slower |
+| Parameter | Value |
+|-----------|-------|
+| Full map size | 400×320 mm |
+| Single card | 200×160 mm |
+| Base thickness | 6 mm |
+| Border height | 5 mm |
+| Puzzle connectors | Tabs/slots in base |
