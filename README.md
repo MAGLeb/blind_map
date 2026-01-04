@@ -74,10 +74,10 @@ python core/prepare_data/merge_geojson.py
 #    Place as: data/input/ETOPO1_Bed_g_gmt4.grd
 ```
 
-| Data | Source |
-|------|--------|
-| **Country borders** | [geoBoundaries](https://www.geoboundaries.org/) |
-| **Elevation** | [NOAA ETOPO1](https://www.ngdc.noaa.gov/mgg/global/) |
+| Data | Purpose | Source |
+|------|---------|--------|
+| **Country borders** | Raised walls between countries | [geoBoundaries](https://www.geoboundaries.org/) |
+| **Elevation (ETOPO1)** | Terrain relief — mountains feel higher, plains lower | [NOAA](https://www.ngdc.noaa.gov/mgg/global/) |
 
 ## Project Structure
 
