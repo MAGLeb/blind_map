@@ -1,15 +1,22 @@
 # Blind Map — Tactile Map for the Visually Impaired
 
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![3D Printing](https://img.shields.io/badge/3D%20Printing-PLA-orange.svg)
+![Region](https://img.shields.io/badge/Region-Europe%20%7C%20Middle%20East-green.svg)
+
 3D-printable map for learning geography by touch.
 
 ![Preview](preview.png)
 
-## Purpose
+## Features
 
-Enable a visually impaired person to:
-- Memorize country locations
-- Understand how countries border each other
-- Feel the terrain (mountains, plains)
+- **Tactile terrain** — mountains and plains you can feel
+- **Raised borders** — walls between countries for easy identification
+- **Wave pattern** — distinguishes sea from land
+- **Capital markers** — hemisphere bumps mark capital cities
+- **7-segment numbers** — each country numbered for reference
+- **Braille legend** — separate card with country names
+- **Puzzle connectors** — 4 cards snap together
 
 ## Specification
 
@@ -51,14 +58,29 @@ Enable a visually impaired person to:
 - Numbers 1-24 with country names (Braille)
 - Texture samples: waves (sea), wall (border), bump (capital)
 
+## Data Sources
+
+This project uses the following data (not included in repo due to size):
+
+| Data | Source | Download |
+|------|--------|----------|
+| **Elevation** | NOAA ETOPO1 | [ETOPO1_Bed_g_gmt4.grd](https://www.ngdc.noaa.gov/mgg/global/) |
+| **Country borders** | Natural Earth | [naturalearthdata.com](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/) |
+
+Place files in:
+```
+data/input/ETOPO1_Bed_g_gmt4.grd
+data/countries/*.geojson
+```
+
 ## Project Structure
 
 ```
 blind_map/
 ├── core/
-│   ├── config.py       # Map region (7 lines)
-│   ├── constants.py    # Parameters (65 lines)
-│   └── generate.py     # STL generator (1626 lines)
+│   ├── config.py       # Map region
+│   ├── constants.py    # Parameters
+│   └── generate.py     # STL generator
 ├── data/
 │   ├── input/          # ETOPO1 elevation data
 │   ├── output/         # STL files (output)
