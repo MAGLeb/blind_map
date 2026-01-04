@@ -1,73 +1,73 @@
-# Blind Map — Тактильная карта для незрячих
+# Blind Map — Tactile Map for the Visually Impaired
 
-3D-печатная карта для изучения географии на ощупь.
+3D-printable map for learning geography by touch.
 
 ![Preview](preview.png)
 
-## Цель
+## Purpose
 
-Дать незрячему человеку возможность:
-- Запомнить расположение стран
-- Понять как страны граничат друг с другом
-- Почувствовать рельеф (горы, равнины)
+Enable a visually impaired person to:
+- Memorize country locations
+- Understand how countries border each other
+- Feel the terrain (mountains, plains)
 
-## Спецификация
+## Specification
 
-### Размеры
+### Dimensions
 
-| Параметр | Значение |
-|----------|----------|
-| Размер карты | 400×320 мм |
-| Карточек | 4 шт (2×2) + легенда |
-| Размер карточки | 200×160 мм |
-| Толщина основания | 6 мм |
+| Parameter | Value |
+|-----------|-------|
+| Map size | 400×320 mm |
+| Cards | 4 pcs (2×2) + legend |
+| Card size | 200×160 mm |
+| Base thickness | 6 mm |
 
-### Регион
+### Region
 
-- Границы: 5°—70° в.д., 12°—55° с.ш.
-- Включает: Балканы, Кавказ, Ближний Восток, Северная Африка
-- 24 страны с номерами
+- Bounds: 5°—70° E, 12°—55° N
+- Includes: Balkans, Caucasus, Middle East, North Africa
+- 24 numbered countries
 
-### Тактильные элементы
+### Tactile Elements
 
-| Элемент | Высота | Размер | Примечание |
-|---------|--------|--------|------------|
-| **Границы стран** | 5 мм | ширина 2.5 мм | Стенки между странами |
-| **Рельеф** | 0—10 мм | — | Горы, равнины |
-| **Вода (море)** | 2 мм | волны через 4 мм | Синусоидальные волны |
-| **Столицы** | 2 мм | ⌀3 мм | Полусфера (бугорок) |
-| **Номера стран** | 1.5 мм | 7-сегментные | Рядом со столицей |
+| Element | Height | Size | Note |
+|---------|--------|------|------|
+| **Country borders** | 5 mm | width 2.5 mm | Walls between countries |
+| **Terrain** | 0—10 mm | — | Mountains, plains |
+| **Water (sea)** | 2 mm | waves every 4 mm | Sinusoidal waves |
+| **Capitals** | 2 mm | ⌀3 mm | Hemisphere (bump) |
+| **Country numbers** | 1.5 mm | 7-segment | Near capital |
 
-### Пазловые соединения
+### Puzzle Connectors
 
-| Параметр | Значение |
-|----------|----------|
-| Tab (выступ) | 8×4×3 мм |
-| Slot (отверстие) | +0.5 мм зазор |
-| Расположение | В нижней части основания |
+| Parameter | Value |
+|-----------|-------|
+| Tab (protrusion) | 8×4×3 mm |
+| Slot (hole) | +0.5 mm clearance |
+| Position | Bottom part of base |
 
-### Легенда (отдельная карточка)
+### Legend (separate card)
 
-- Номера 1-24 с названиями стран (Braille)
-- Образцы текстур: волны (море), стенка (граница), бугорок (столица)
+- Numbers 1-24 with country names (Braille)
+- Texture samples: waves (sea), wall (border), bump (capital)
 
-## Структура проекта
+## Project Structure
 
 ```
 blind_map/
 ├── core/
-│   ├── config.py       # Регион карты (7 строк)
-│   ├── constants.py    # Параметры (65 строк)
-│   └── generate.py     # Генератор STL (1626 строк)
+│   ├── config.py       # Map region (7 lines)
+│   ├── constants.py    # Parameters (65 lines)
+│   └── generate.py     # STL generator (1626 lines)
 ├── data/
-│   ├── input/          # ETOPO1 данные высот
-│   ├── output/         # STL файлы (результат)
-│   └── countries/      # GeoJSON границ стран
+│   ├── input/          # ETOPO1 elevation data
+│   ├── output/         # STL files (output)
+│   └── countries/      # GeoJSON country borders
 └── README.md
 ```
 
-## 3D Печать
+## 3D Printing
 
-- **Материал**: PLA
-- **Заполнение**: 15-20%
-- **Слой**: 0.2 мм
+- **Material**: PLA
+- **Infill**: 15-20%
+- **Layer**: 0.2 mm
