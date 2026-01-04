@@ -64,39 +64,8 @@ blind_map/
 └── README.md
 ```
 
-## Запуск
-
-```bash
-cd core
-python3 generate.py
-```
-
-### Результат
-
-```
-data/output/
-├── tactile_map.stl    # Полная карта
-├── card_1.stl         # Левый нижний
-├── card_2.stl         # Правый нижний
-├── card_3.stl         # Левый верхний
-├── card_4.stl         # Правый верхний
-├── card_legend.stl    # Легенда
-└── legend.txt         # Текстовая легенда
-```
-
-## Требования
-
-```
-Python 3.8+
-geopandas
-numpy
-scipy
-shapely
-xarray
-```
-
 ## 3D Печать
 
-- **Материал**: PLA (рекомендуется)
+- **Материал**: PLA
 - **Заполнение**: 15-20%
 - **Слой**: 0.2 мм
