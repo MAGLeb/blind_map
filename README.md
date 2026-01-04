@@ -99,6 +99,8 @@ blind_map/
 
 ## 3D Printing
 
-- **Material**: PLA
-- **Infill**: 15-20%
-- **Layer**: 0.2 mm
+| Parameter | Value | Why |
+|-----------|-------|-----|
+| **Material** | PLA | Easy to print, safe, cheap |
+| **Infill** | 15-20% | Inside fill density. Low = lighter, faster, cheaper |
+| **Layer height** | 0.2 mm | Standard quality. Thinner = smoother but slower |
