@@ -1216,25 +1216,35 @@ def create_inner_side_wall(card_verts, edge, card_width, card_height, slots=None
     z_bottom = -BASE_THICKNESS_MM
     slot_z_top = -BASE_THICKNESS_MM + TAB_HEIGHT_MM  # -3
 
+    # Find terrain surface vertices near the edge (with larger tolerance)
+    tolerance = 3.0  # larger tolerance to find terrain vertices
+
     if edge == 'right':
         x = card_width
-        edge_verts = [(v[1], v[2]) for v in card_verts if abs(v[0] - x) < 0.5 and v[2] > z_bottom + 0.1]
+        edge_verts = [(v[1], v[2]) for v in card_verts if abs(v[0] - x) < tolerance and v[2] > 0]
     elif edge == 'left':
         x = 0
-        edge_verts = [(v[1], v[2]) for v in card_verts if abs(v[0]) < 0.5 and v[2] > z_bottom + 0.1]
+        edge_verts = [(v[1], v[2]) for v in card_verts if abs(v[0]) < tolerance and v[2] > 0]
     elif edge == 'top':
         y = card_height
-        edge_verts = [(v[0], v[2]) for v in card_verts if abs(v[1] - y) < 0.5 and v[2] > z_bottom + 0.1]
+        edge_verts = [(v[0], v[2]) for v in card_verts if abs(v[1] - y) < tolerance and v[2] > 0]
     elif edge == 'bottom':
         y = 0
-        edge_verts = [(v[0], v[2]) for v in card_verts if abs(v[1]) < 0.5 and v[2] > z_bottom + 0.1]
+        edge_verts = [(v[0], v[2]) for v in card_verts if abs(v[1]) < tolerance and v[2] > 0]
     else:
         return np.array([]), np.array([])
 
+    # If no terrain verts found, create simple wall at z=0
     if not edge_verts:
-        return np.array([]), np.array([])
-
-    edge_verts = sorted(set(edge_verts), key=lambda p: p[0])
+        # Create uniform wall along edge
+        n_segments = 20
+        if edge in ['right', 'left']:
+            positions = np.linspace(0, card_height, n_segments + 1)
+        else:
+            positions = np.linspace(0, card_width, n_segments + 1)
+        edge_verts = [(p, 0.0) for p in positions]
+    else:
+        edge_verts = sorted(set(edge_verts), key=lambda p: p[0])
 
     if len(edge_verts) < 2:
         return np.array([]), np.array([])
@@ -1264,18 +1274,14 @@ def create_inner_side_wall(card_verts, edge, card_width, card_height, slots=None
         in_slot = False
         if slot_range:
             s_min, s_max = slot_range
-            # Segment overlaps slot if ranges intersect
             if not (pos2 <= s_min or pos1 >= s_max):
                 in_slot = True
 
         if in_slot:
-            # In slot area: wall only from terrain to slot_z_top (upper part)
             z_wall_bottom = slot_z_top
         else:
-            # Outside slot: wall from terrain to full bottom
             z_wall_bottom = z_bottom
 
-        # Create quad for this segment
         if edge == 'right':
             verts = [
                 [x, pos1, z1], [x, pos2, z2],
