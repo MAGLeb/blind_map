@@ -58,33 +58,42 @@
 - Numbers 1-24 with country names (Braille)
 - Texture samples: waves (sea), wall (border), bump (capital)
 
-## Data Sources
+## Data Preparation
 
-This project uses the following data (not included in repo due to size):
+Data files are not included (too large). To download:
 
-| Data | Source | Download |
-|------|--------|----------|
-| **Elevation** | NOAA ETOPO1 | [ETOPO1_Bed_g_gmt4.grd](https://www.ngdc.noaa.gov/mgg/global/) |
-| **Country borders** | Natural Earth | [naturalearthdata.com](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/) |
+```bash
+# 1. Download country borders from geoBoundaries
+python core/prepare_data/download_geojson.py
 
-Place files in:
+# 2. Merge into single file
+python core/prepare_data/merge_geojson.py
+
+# 3. Download ETOPO1 elevation manually:
+#    https://www.ngdc.noaa.gov/mgg/global/
+#    Place as: data/input/ETOPO1_Bed_g_gmt4.grd
 ```
-data/input/ETOPO1_Bed_g_gmt4.grd
-data/countries/*.geojson
-```
+
+| Data | Source |
+|------|--------|
+| **Country borders** | [geoBoundaries](https://www.geoboundaries.org/) |
+| **Elevation** | [NOAA ETOPO1](https://www.ngdc.noaa.gov/mgg/global/) |
 
 ## Project Structure
 
 ```
 blind_map/
 ├── core/
-│   ├── config.py       # Map region
-│   ├── constants.py    # Parameters
-│   └── generate.py     # STL generator
-├── data/
-│   ├── input/          # ETOPO1 elevation data
-│   ├── output/         # STL files (output)
-│   └── countries/      # GeoJSON country borders
+│   ├── config.py          # Map region
+│   ├── constants.py       # Parameters
+│   ├── generate.py        # STL generator
+│   └── prepare_data/      # Data download scripts
+│       ├── download_geojson.py
+│       └── merge_geojson.py
+├── data/                  # Not in repo
+│   ├── input/             # ETOPO1 elevation
+│   ├── output/            # STL files
+│   └── countries/         # GeoJSON files
 └── README.md
 ```
 
